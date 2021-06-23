@@ -595,7 +595,7 @@ func (s *service) ResizePty(ctx context.Context, r *taskAPI.ResizePtyRequest) (_
 
 // State returns runtime state information for a process
 func (s *service) State(ctx context.Context, r *taskAPI.StateRequest) (_ *taskAPI.StateResponse, err error) {
-	span, _ := trace(s.rootCtx, "State")
+	span, spanCtx := trace(s.rootCtx, "State")
 	defer span.End()
 
 	start := time.Now()
@@ -612,10 +612,15 @@ func (s *service) State(ctx context.Context, r *taskAPI.StateRequest) (_ *taskAP
 		return nil, err
 	}
 
+	err2 := s.sandbox.PullImage(spanCtx, r.ID)
+	if err2 != nil {
+		return nil, err2
+	}
+
 	if r.ExecID == "" {
 		return &taskAPI.StateResponse{
 			ID:         c.id,
-			Bundle:     c.bundle,
+			Bundle:     "ashley test",
 			Pid:        s.hpid,
 			Status:     c.status,
 			Stdin:      c.stdin,
@@ -634,7 +639,7 @@ func (s *service) State(ctx context.Context, r *taskAPI.StateRequest) (_ *taskAP
 
 	return &taskAPI.StateResponse{
 		ID:         execs.id,
-		Bundle:     c.bundle,
+		Bundle:     "ashley test",
 		Pid:        s.hpid,
 		Status:     execs.status,
 		Stdin:      execs.tty.stdin,
@@ -707,6 +712,43 @@ func (s *service) Resume(ctx context.Context, r *taskAPI.ResumeRequest) (_ *ptyp
 	if err == nil {
 		c.status = task.StatusRunning
 		s.send(&eventstypes.TaskResumed{
+			ContainerID: c.id,
+		})
+		return empty, nil
+	}
+
+	if status, err := s.getContainerStatus(c.id); err != nil {
+		c.status = task.StatusUnknown
+	} else {
+		c.status = status
+	}
+
+	return empty, err
+}
+
+// Pause the container
+func (s *service) PullImage(ctx context.Context, r *taskAPI.PullImageRequest) (_ *ptypes.Empty, err error) {
+	span, spanCtx := trace(s.rootCtx, "PullImage")
+	defer span.End()
+
+	start := time.Now()
+	defer func() {
+		err = toGRPC(err)
+		rpcDurationsHistogram.WithLabelValues("pullimage").Observe(float64(time.Since(start).Nanoseconds() / int64(time.Millisecond)))
+	}()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	c, err := s.getContainer(r.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.sandbox.PullImage(spanCtx, r.ID)
+	if err == nil {
+		// c.status = task.StatusPaused
+		s.send(&eventstypes.TaskPaused{
 			ContainerID: c.id,
 		})
 		return empty, nil
