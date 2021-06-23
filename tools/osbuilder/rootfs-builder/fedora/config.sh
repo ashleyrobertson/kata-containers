@@ -9,7 +9,7 @@ OS_VERSION=${OS_VERSION:-30}
 
 MIRROR_LIST="https://mirrors.fedoraproject.org/metalink?repo=fedora-${OS_VERSION}&arch=\$basearch"
 
-PACKAGES="iptables chrony"
+PACKAGES="iptables chrony skopeo net-tools iproute"
 
 #Optional packages:
 # systemd: An init system that will start kata-agent if kata-agent

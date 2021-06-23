@@ -66,6 +66,7 @@ use std::path::PathBuf;
 
 const CONTAINER_BASE: &str = "/run/kata-containers";
 const MODPROBE_PATH: &str = "/sbin/modprobe";
+const SKOPEO_PATH: &str = "/usr/bin/skopeo";
 
 // Convenience macro to obtain the scope logger
 macro_rules! sl {
@@ -644,6 +645,31 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
 
         ctr.pause()
             .map_err(|e| ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))?;
+
+        Ok(Empty::new())
+    }
+
+    async fn pull_image(
+        &self,
+        _ctx: &TtrpcContext,
+        req: protocols::agent::PauseContainerRequest,
+    ) -> ttrpc::Result<protocols::empty::Empty> {
+        info!(sl!(), "receive pull_image {:?}", req);
+
+        let image = req.get_container_id();
+
+        let source: &str = "docker://";
+        let target: &str = "dir:/tmp";
+        let source_image = format!("{}{}",source,image);
+
+        let status = Command::new(SKOPEO_PATH)
+            .arg("copy")
+            .arg(source_image)
+            .arg(target)
+            .status()
+            .expect("Danger Will Robinson!");
+
+        info!(sl!(), "process finished with: {}", status);
 
         Ok(Empty::new())
     }

@@ -66,6 +66,9 @@ service AgentService {
 	rpc SetGuestDateTime(SetGuestDateTimeRequest) returns (google.protobuf.Empty);
 	rpc CopyFile(CopyFileRequest) returns (google.protobuf.Empty);
 	rpc GetOOMEvent(GetOOMEventRequest) returns (OOMEvent);
+
+	// misc Testing Skopeo for image pulling
+	rpc PullImage(PauseContainerRequest) returns (google.protobuf.Empty);
 }
 
 message CreateContainerRequest {
