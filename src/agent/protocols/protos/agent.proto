@@ -68,10 +68,12 @@ service AgentService {
 	rpc GetOOMEvent(GetOOMEventRequest) returns (OOMEvent);
 
 	// Testing Skopeo for image pulling
-	rpc PullImage(PauseContainerRequest) returns (google.protobuf.Empty);
+	// rpc PullImage(PauseContainerRequest) returns (google.protobuf.Empty);
+	rpc PullImage(PauseContainerRequest) returns(Output);
 
 	// Testing Skopeo for image validation
-	rpc VerifyImage(PauseContainerRequest) returns (google.protobuf.Empty);
+	// rpc VerifyImage(PauseContainerRequest) returns (google.protobuf.Empty);
+	rpc VerifyImage(PauseContainerRequest) returns(Output);
 }
 
 message CreateContainerRequest {
@@ -515,4 +517,8 @@ message GetMetricsRequest {}
 
 message Metrics {
 	string metrics = 1;
+}
+
+message Output {
+	string output = 1;
 }

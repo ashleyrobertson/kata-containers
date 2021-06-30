@@ -631,7 +631,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
         &self,
         _ctx: &TtrpcContext,
         req: protocols::agent::PauseContainerRequest,
-    ) -> ttrpc::Result<protocols::empty::Empty> {
+    ) -> Result<String> {
         info!(sl!(), "receive pull_image {:?}", req);
 
         let image = req.get_container_id();
@@ -653,14 +653,14 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
 
         info!(sl!(), "process finished with: {}", status);
 
-        Ok(status)
+        Ok(Empty::new())
     }
 
     async fn verify_image(
         &self,
         _ctx: &TtrpcContext,
         req: protocols::agent::PauseContainerRequest,
-    ) -> ttrpc::Result<protocols::empty::Empty> {
+    ) -> Result<String> {
         info!(sl!(), "receive verify_image {:?}", req);
 
         let image = req.get_container_id();
@@ -679,7 +679,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
 
         info!(sl!(), "process finished with: {}", status);
 
-        Ok(status)
+        Ok(Empty::new())
     }
 
     async fn pause_container(
