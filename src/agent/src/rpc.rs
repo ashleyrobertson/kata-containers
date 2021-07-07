@@ -721,7 +721,6 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
     async fn unpack_image(
         &self,
         _ctx: &TtrpcContext,
-        req: protocols::agent::PauseContainerRequest,
     ) -> ttrpc::Result<protocols::empty::Empty> {
 
         let source_path: &str = "/tmp/image";
