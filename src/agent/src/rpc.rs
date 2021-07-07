@@ -632,7 +632,6 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
         _ctx: &TtrpcContext,
         req: protocols::agent::PauseContainerRequest,
     ) -> ttrpc::Result<protocols::empty::Empty> {
-        info!(sl!(), "receive pull_image {:?}", req);
 
         let image = req.get_container_id();
         let api_key = req.get_api_key();
@@ -657,7 +656,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
             .status()
             .expect("Cannot create directory");
 
-        info!(sl!(), "process finished with: {}", status);
+        assert!(status.success());
         
         // Copy image
         let status = Command::new(SKOPEO_PATH)
@@ -669,7 +668,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
             .status()
             .expect("Failed to pull image");
 
-        info!(sl!(), "process finished with: {}", status);
+        assert!(status.success());
 
         Ok(Empty::new())
     }
@@ -679,7 +678,6 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
         _ctx: &TtrpcContext,
         req: protocols::agent::PauseContainerRequest,
     ) -> ttrpc::Result<protocols::empty::Empty> {
-        info!(sl!(), "receive verify_image {:?}", req);
 
         let image = req.get_container_id();
         let gpg_key = req.get_gpg_key();
@@ -693,7 +691,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
             .status()
             .expect("Cannot create directory");
 
-        info!(sl!(), "process finished with: {}", status);
+        assert!(status.success());
 
         // Import the public key
         let status = Command::new("gpg")
@@ -702,7 +700,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
             .status()
             .expect("Cannot import public key");
 
-        info!(sl!(), "process finished with: {}", status);
+        assert!(status.success());
 
         // Verify image
         let status = Command::new(SKOPEO_PATH)
@@ -714,12 +712,7 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
             .status()
             .expect("Failed to verify signature");
 
-        info!(sl!(), "manifest_file is: {}", manifest_file);
-        info!(sl!(), "signature_file is: {}", signature_file);
-        info!(sl!(), "gpg_key is: {}", gpg_key);
-        info!(sl!(), "image is: {}", image);
-
-        info!(sl!(), "process finished with: {}", status);
+        assert!(status.success());
 
         Ok(Empty::new())
     }
