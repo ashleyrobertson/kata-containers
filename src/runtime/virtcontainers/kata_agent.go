@@ -1745,10 +1745,11 @@ func (k *kataAgent) pullImage(ctx context.Context, sandbox *Sandbox, c Container
 	req := &grpc.PullImageRequest{
 		ContainerId: c.id,
 	}
-
-	resp, err := k.sendReq(ctx, req)
-	c.Logger().Debugf("ASHLEY response is %v to %v", resp, err)
-	return err
+	//
+	// resp, err := k.sendReq(ctx, req)
+	// c.Logger().Debugf("ASHLEY response is %v to %v", resp, err)
+	c.Logger().Debugf("ASHLEY response is ")
+	return nil
 }
 
 func (k *kataAgent) memHotplugByProbe(ctx context.Context, addr uint64, sizeMB uint32, memorySectionSizeMB uint32) error {
