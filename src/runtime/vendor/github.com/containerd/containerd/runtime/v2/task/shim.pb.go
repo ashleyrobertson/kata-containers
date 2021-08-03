@@ -34,6 +34,7 @@
 		ShutdownRequest
 		PauseRequest
 		ResumeRequest
+		PullImageRequest
 */
 package task
 
@@ -324,6 +325,14 @@ func (m *ResumeRequest) Reset()                    { *m = ResumeRequest{} }
 func (*ResumeRequest) ProtoMessage()               {}
 func (*ResumeRequest) Descriptor() ([]byte, []int) { return fileDescriptorShim, []int{25} }
 
+type PullImageRequest struct {
+	ID string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *PullImageRequest) Reset()                    { *m = PullImageRequest{} }
+func (*PullImageRequest) ProtoMessage()               {}
+func (*PullImageRequest) Descriptor() ([]byte, []int) { return fileDescriptorShim, []int{24} }
+
 func init() {
 	proto.RegisterType((*CreateTaskRequest)(nil), "containerd.task.v2.CreateTaskRequest")
 	proto.RegisterType((*CreateTaskResponse)(nil), "containerd.task.v2.CreateTaskResponse")
@@ -351,6 +360,7 @@ func init() {
 	proto.RegisterType((*ShutdownRequest)(nil), "containerd.task.v2.ShutdownRequest")
 	proto.RegisterType((*PauseRequest)(nil), "containerd.task.v2.PauseRequest")
 	proto.RegisterType((*ResumeRequest)(nil), "containerd.task.v2.ResumeRequest")
+	proto.RegisterType((*PullImageRequest)(nil), "containerd.task.v2.PullImageRequest")
 }
 func (m *CreateTaskRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -1289,6 +1299,30 @@ func (m *ResumeRequest) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *PullImageRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PullImageRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ID) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintShim(dAtA, i, uint64(len(m.ID)))
+		i += copy(dAtA[i:], m.ID)
+	}
+	return i, nil
+}
+
 func encodeVarintShim(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -1713,6 +1747,16 @@ func (m *ResumeRequest) Size() (n int) {
 	return n
 }
 
+func (m *PullImageRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovShim(uint64(l))
+	}
+	return n
+}
+
 func sovShim(x uint64) (n int) {
 	for {
 		n++
@@ -2030,6 +2074,16 @@ func (this *ResumeRequest) String() string {
 	}, "")
 	return s
 }
+func (this *PullImageRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PullImageRequest{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func valueToStringShim(v interface{}) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -2047,6 +2101,7 @@ type TaskService interface {
 	Pids(ctx context.Context, req *PidsRequest) (*PidsResponse, error)
 	Pause(ctx context.Context, req *PauseRequest) (*google_protobuf1.Empty, error)
 	Resume(ctx context.Context, req *ResumeRequest) (*google_protobuf1.Empty, error)
+	PullImage(ctx context.Context, req *PullImageRequest) (*google_protobuf1.Empty, error)
 	Checkpoint(ctx context.Context, req *CheckpointTaskRequest) (*google_protobuf1.Empty, error)
 	Kill(ctx context.Context, req *KillRequest) (*google_protobuf1.Empty, error)
 	Exec(ctx context.Context, req *ExecProcessRequest) (*google_protobuf1.Empty, error)
@@ -2109,6 +2164,13 @@ func RegisterTaskService(srv *ttrpc.Server, svc TaskService) {
 				return nil, err
 			}
 			return svc.Resume(ctx, &req)
+		},
+		"PullImage": func(ctx context.Context, unmarshal func(interface{}) error) (interface{}, error) {
+			var req PullImageRequest
+			if err := unmarshal(&req); err != nil {
+				return nil, err
+			}
+			return svc.PullImage(ctx, &req)
 		},
 		"Checkpoint": func(ctx context.Context, unmarshal func(interface{}) error) (interface{}, error) {
 			var req CheckpointTaskRequest
@@ -2244,6 +2306,14 @@ func (c *taskClient) Pause(ctx context.Context, req *PauseRequest) (*google_prot
 func (c *taskClient) Resume(ctx context.Context, req *ResumeRequest) (*google_protobuf1.Empty, error) {
 	var resp google_protobuf1.Empty
 	if err := c.client.Call(ctx, "containerd.task.v2.Task", "Resume", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *taskClient) PullImage(ctx context.Context, req *PullImageRequest) (*google_protobuf1.Empty, error) {
+	var resp google_protobuf1.Empty
+	if err := c.client.Call(ctx, "containerd.task.v2.Task", "PullImage", req, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -5449,6 +5519,85 @@ func (m *ResumeRequest) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: ResumeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowShim
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthShim
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipShim(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthShim
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowShim
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PullImageRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PullImageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
