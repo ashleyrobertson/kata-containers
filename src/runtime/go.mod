@@ -18,7 +18,6 @@ require (
 	github.com/containerd/typeurl v1.0.1-0.20190228175220-2a93cfde8c20
 	github.com/containernetworking/plugins v0.8.2
 	github.com/cri-o/cri-o v1.0.0-rc2.0.20170928185954-3394b3b2d6af
-	github.com/dlespiau/covertool v0.0.0-20180314162135-b0c4c6d0583a
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
@@ -31,6 +30,7 @@ require (
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/hashicorp/go-multierror v1.0.0
+	github.com/intel-go/cpuid v0.0.0-20210602155658-5747e5cec0d9
 	github.com/kata-containers/govmm v0.0.0-20210520142420-eb57f004d89f
 	github.com/mdlayher/vsock v0.0.0-20191108225356-d9c65923cb8f
 	github.com/opencontainers/image-spec v1.0.1 // indirect

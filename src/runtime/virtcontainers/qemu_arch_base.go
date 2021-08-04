@@ -168,23 +168,27 @@ const (
 	// IBM POWER 9 Protected Execution Facility
 	// https://www.kernel.org/doc/html/latest/powerpc/ultravisor.html
 	pefProtection
+
+	// IBM Secure Execution (IBM Z & LinuxONE)
+	// https://www.kernel.org/doc/html/latest/virt/kvm/s390-pv.html
+	seProtection
 )
 
 type qemuArchBase struct {
-	qemuMachine          govmmQemu.Machine
-	qemuExePath          string
-	memoryOffset         uint32
+	memoryOffset         uint64
+	networkIndex         int
 	nestedRun            bool
 	vhost                bool
 	disableNvdimm        bool
 	dax                  bool
-	networkIndex         int
+	protection           guestProtection
+	qemuMachine          govmmQemu.Machine
+	qemuExePath          string
+	PFlash               []string
 	kernelParamsNonDebug []Param
 	kernelParamsDebug    []Param
 	kernelParams         []Param
 	Bridges              []types.Bridge
-	PFlash               []string
-	protection           guestProtection
 }
 
 const (

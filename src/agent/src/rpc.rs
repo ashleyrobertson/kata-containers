@@ -67,6 +67,10 @@ use std::path::PathBuf;
 const CONTAINER_BASE: &str = "/run/kata-containers";
 const MODPROBE_PATH: &str = "/sbin/modprobe";
 const SKOPEO_PATH: &str = "/usr/bin/skopeo";
+const UMOCI_PATH: &str = "/usr/local/bin/umoci";
+const IMAGE_MANIFEST: &str = "/tmp/image_manifest";
+const IMAGE_OCI: &str = "/tmp/image_oci:latest";
+const GPG_HOME: &str = "/tmp/gpg_home";
 
 // Convenience macro to obtain the scope logger
 macro_rules! sl {
@@ -627,6 +631,156 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
             .map_err(|e| ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
     }
 
+    async fn pull_image(
+        &self,
+        _ctx: &TtrpcContext,
+        req: protocols::agent::PauseContainerRequest,
+    ) -> ttrpc::Result<protocols::empty::Empty> {
+
+        let image = req.get_container_id();
+        let api_key = req.get_api_key();
+
+        // Define the source transport for the copy "from"
+        let source_transport: &str = "docker://";
+
+        // Define the source image URL, combining transport and image name e.g. "docker://us.icr.io/iks_with_hyperprotect/hello_world_nginx_june_2021:latest"
+        let source_image = format!("{}{}",source_transport,image);
+
+        // Define the source credentials taking the KBot account API key from input
+        let source_creds = format!("{}{}", "iamapikey:",api_key);
+
+        // Define the target tranport and path for the manifest image, with signature
+        let target_path_manifest = format!("{}{}", "dir://", IMAGE_MANIFEST);
+
+        // Define the target transport and path for the OCI image, without signature
+        let target_path_oci = format!("{}{}", "oci://", IMAGE_OCI);
+
+        // Create directory into which to copy the manifest image
+        // Will add code to munge the image registry/namespace/repository/tag to make this more dynamic
+        let status = Command::new("mkdir")
+            .arg("-v")
+            .arg("-p")
+            .arg(&IMAGE_MANIFEST)
+            .status()
+            .expect("Cannot create directory");
+
+        assert!(status.success());
+        
+        // Create directory into which to copy the OCI image
+        // Will add code to munge the image registry/namespace/repository/tag to make this more dynamic
+        let status = Command::new("mkdir")
+            .arg("-v")
+            .arg("-p")
+            .arg(&IMAGE_OCI)
+            .status()
+            .expect("Cannot create directory");
+
+        assert!(status.success());
+
+        // Copy image from image registry to local file-system
+        // Resulting image is stored in manifest format, and includes the signature
+        let status = Command::new(SKOPEO_PATH)
+            .arg("copy")
+            .arg(source_image)
+            .arg(&target_path_manifest)
+            .arg("--src-creds")
+            .arg(source_creds)
+            .status()
+            .expect("Failed to pull image");
+
+        assert!(status.success());
+
+        // Copy image from one local file-system to another
+        // Resulting image is still stored in manifest format, but no longer includes the signature
+        // The image with a signature can then be unpacked into a bundle
+        let status = Command::new(SKOPEO_PATH)
+            .arg("copy")
+            .arg(&target_path_manifest)
+            .arg(&target_path_oci)
+            .arg("--remove-signatures")
+            .status()
+            .expect("Failed to copy image");
+
+        assert!(status.success());
+
+        Ok(Empty::new())
+    }
+
+    async fn verify_image(
+        &self,
+        _ctx: &TtrpcContext,
+        req: protocols::agent::PauseContainerRequest,
+    ) -> ttrpc::Result<protocols::empty::Empty> {
+
+        let image = req.get_container_id();
+        let gpg_key = req.get_gpg_key();
+        let target_path_manifest = IMAGE_MANIFEST;
+        let signature_file = format!("{}{}", target_path_manifest, "/signature-1");
+        let manifest_file = format!("{}{}", target_path_manifest, "/manifest.json");
+
+        // Create a directory into which to import the public key
+        let status = Command::new("mkdir")
+            .arg("-p")
+            .arg(GPG_HOME)
+            .status()
+            .expect("Cannot create directory");
+
+        assert!(status.success());
+
+        // Import the public key
+        let status = Command::new("gpg")
+            .arg("--import")
+            .arg("/root/davehay_pub.gpg")
+            .status()
+            .expect("Cannot import public key");
+
+        assert!(status.success());
+
+        // Verify image
+        let status = Command::new(SKOPEO_PATH)
+            .arg("standalone-verify")
+            .arg(manifest_file)
+            .arg(image)
+            .arg(gpg_key)
+            .arg(signature_file)
+            .status()
+            .expect("Failed to verify signature");
+
+        assert!(status.success());
+
+        Ok(Empty::new())
+    }
+
+    async fn unpack_image(
+        &self,
+        _ctx: &TtrpcContext,
+        req: protocols::agent::PauseContainerRequest,
+    ) -> ttrpc::Result<protocols::empty::Empty> {
+
+        // let cid = req.get_container_id();
+        let cid: &str = "0123456789012345678901234567890123456789";
+        let source_path_oci = IMAGE_OCI;
+        let target_path_bundle = format!("{}{}{}", CONTAINER_BASE, "/", cid);
+
+        info!(sl!(), "unpacking image into bundle {:?}", req);
+        info!(sl!(), "cid is {:?}", cid);
+        info!(sl!(), "target_path_bundle is {:?}", target_path_bundle);
+
+        // Unpack image
+        let status = Command::new(UMOCI_PATH)
+            .arg("--verbose")
+            .arg("unpack")
+            .arg("--image")
+            .arg(source_path_oci)
+            .arg(target_path_bundle)
+            .status()
+            .expect("Failed to unpack image");
+
+        assert!(status.success());
+
+        Ok(Empty::new())
+    }
+
     async fn pause_container(
         &self,
         _ctx: &TtrpcContext,
@@ -645,31 +799,6 @@ impl protocols::agent_ttrpc::AgentService for AgentService {
 
         ctr.pause()
             .map_err(|e| ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))?;
-
-        Ok(Empty::new())
-    }
-
-    async fn pull_image(
-        &self,
-        _ctx: &TtrpcContext,
-        req: protocols::agent::PauseContainerRequest,
-    ) -> ttrpc::Result<protocols::empty::Empty> {
-        info!(sl!(), "receive pull_image {:?}", req);
-
-        let image = req.get_container_id();
-
-        let source: &str = "docker://";
-        let target: &str = "dir:/tmp";
-        let source_image = format!("{}{}",source,image);
-
-        let status = Command::new(SKOPEO_PATH)
-            .arg("copy")
-            .arg(source_image)
-            .arg(target)
-            .status()
-            .expect("Danger Will Robinson!");
-
-        info!(sl!(), "process finished with: {}", status);
 
         Ok(Empty::new())
     }
@@ -1524,16 +1653,15 @@ fn setup_bundle(cid: &str, spec: &mut Spec) -> Result<PathBuf> {
     let config_path = bundle_path.join("config.json");
     let rootfs_path = bundle_path.join("rootfs");
 
-    fs::create_dir_all(&rootfs_path)?;
-    BareMount::new(
-        &spec_root.path,
-        rootfs_path.to_str().unwrap(),
-        "bind",
-        MsFlags::MS_BIND,
-        "",
-        &sl!(),
-    )
-    .mount()?;
+    let does_bundle_exist = Path::new(&config_path).is_file();
+    info!(sl!(), "Does the bundle exist {:?}", does_bundle_exist);
+    info!(sl!(), "The config_path is {:?}", config_path);
+
+    if !does_bundle_exist {
+        fs::create_dir_all(&rootfs_path)?;
+        BareMount::new(&spec_root.path,rootfs_path.to_str().unwrap(),"bind",MsFlags::MS_BIND,"",&sl!(),).mount()?;
+    }
+
     spec.root = Some(Root {
         path: rootfs_path.to_str().unwrap().to_owned(),
         readonly: spec_root.readonly,

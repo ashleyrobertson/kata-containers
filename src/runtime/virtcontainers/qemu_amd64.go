@@ -13,6 +13,7 @@ import (
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/types"
 	"github.com/sirupsen/logrus"
 
+	"github.com/intel-go/cpuid"
 	govmmQemu "github.com/kata-containers/govmm/qemu"
 )
 
@@ -37,6 +38,8 @@ const (
 	tdxSysFirmwareDir = "/sys/firmware/tdx_seam/"
 
 	tdxCPUFlag = "tdx"
+
+	sevKvmParameterPath = "/sys/module/kvm_amd/parameters/sev"
 )
 
 var qemuPaths = map[string]string{
@@ -213,6 +216,12 @@ func (q *qemuAmd64) enableProtection() error {
 	if err != nil {
 		return err
 	}
+	logger := virtLog.WithFields(logrus.Fields{
+		"subsystem":               "qemuAmd64",
+		"machine":                 q.qemuMachine,
+		"kernel-params-debug":     q.kernelParamsDebug,
+		"kernel-params-non-debug": q.kernelParamsNonDebug,
+		"kernel-params":           q.kernelParams})
 
 	switch q.protection {
 	case tdxProtection:
@@ -221,14 +230,17 @@ func (q *qemuAmd64) enableProtection() error {
 		}
 		q.qemuMachine.Options += "kvm-type=tdx,confidential-guest-support=tdx"
 		q.kernelParams = append(q.kernelParams, Param{"tdx_guest", ""})
-		virtLog.WithFields(logrus.Fields{
-			"subsystem":     "qemuAmd64",
-			"machine":       q.qemuMachine,
-			"kernel-params": q.kernelParameters}).
-			Info("Enabling TDX guest protection")
+		logger.Info("Enabling TDX guest protection")
+		return nil
+	case sevProtection:
+		if q.qemuMachine.Options != "" {
+			q.qemuMachine.Options += ","
+		}
+		q.qemuMachine.Options += "confidential-guest-support=sev"
+		logger.Info("Enabling SEV guest protection")
 		return nil
 
-	// TODO: Add support for other x86_64 technologies: SEV
+	// TODO: Add support for other x86_64 technologies
 
 	default:
 		return fmt.Errorf("This system doesn't support Confidential Computing (Guest Protection)")
@@ -249,6 +261,16 @@ func (q *qemuAmd64) appendProtectionDevice(devices []govmmQemu.Device, firmware 
 				DeviceID: fmt.Sprintf("fd%d", id),
 				Debug:    false,
 				File:     firmware,
+			}), "", nil
+	case sevProtection:
+		return append(devices,
+			govmmQemu.Object{
+				Type:            govmmQemu.SEVGuest,
+				ID:              "sev",
+				Debug:           false,
+				File:            firmware,
+				CBitPos:         cpuid.AMDMemEncrypt.CBitPosition,
+				ReducedPhysBits: cpuid.AMDMemEncrypt.PhysAddrReduction,
 			}), "", nil
 	case noneProtection:
 		return devices, firmware, nil

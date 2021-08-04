@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/intel-go/cpuid"
 	govmmQemu "github.com/kata-containers/govmm/qemu"
 	"github.com/kata-containers/kata-containers/src/runtime/virtcontainers/types"
 	"github.com/stretchr/testify/assert"
@@ -108,7 +109,7 @@ func TestQemuAmd64CPUModel(t *testing.T) {
 func TestQemuAmd64MemoryTopology(t *testing.T) {
 	assert := assert.New(t)
 	amd64 := newTestQemu(assert, QemuPC)
-	memoryOffset := 1024
+	memoryOffset := uint64(1024)
 
 	hostMem := uint64(100)
 	mem := uint64(120)
@@ -116,7 +117,7 @@ func TestQemuAmd64MemoryTopology(t *testing.T) {
 	expectedMemory := govmmQemu.Memory{
 		Size:   fmt.Sprintf("%dM", mem),
 		Slots:  slots,
-		MaxMem: fmt.Sprintf("%dM", hostMem+uint64(memoryOffset)),
+		MaxMem: fmt.Sprintf("%dM", hostMem+memoryOffset),
 	}
 
 	m := amd64.memoryTopology(mem, hostMem, slots)
@@ -299,12 +300,31 @@ func TestQemuAmd64AppendProtectionDevice(t *testing.T) {
 	assert.Error(err)
 	assert.Empty(bios)
 
-	// sev protection
-	// TODO: update once it's supported
-	amd64.(*qemuAmd64).protection = sevProtection
+	// Secure Execution protection
+	amd64.(*qemuAmd64).protection = seProtection
 	devices, bios, err = amd64.appendProtectionDevice(devices, firmware)
 	assert.Error(err)
 	assert.Empty(bios)
+
+	// sev protection
+	amd64.(*qemuAmd64).protection = sevProtection
+
+	devices, bios, err = amd64.appendProtectionDevice(devices, firmware)
+	assert.NoError(err)
+	assert.Empty(bios)
+
+	expectedOut := []govmmQemu.Device{
+		govmmQemu.Object{
+			Type:            govmmQemu.SEVGuest,
+			ID:              "sev",
+			Debug:           false,
+			File:            firmware,
+			CBitPos:         cpuid.AMDMemEncrypt.CBitPosition,
+			ReducedPhysBits: cpuid.AMDMemEncrypt.PhysAddrReduction,
+		},
+	}
+
+	assert.Equal(expectedOut, devices)
 
 	// tdxProtection
 	amd64.(*qemuAmd64).protection = tdxProtection
@@ -313,7 +333,7 @@ func TestQemuAmd64AppendProtectionDevice(t *testing.T) {
 	assert.NoError(err)
 	assert.Empty(bios)
 
-	expectedOut := []govmmQemu.Device{
+	expectedOut = append(expectedOut,
 		govmmQemu.Object{
 			Driver:   govmmQemu.Loader,
 			Type:     govmmQemu.TDXGuest,
@@ -322,7 +342,7 @@ func TestQemuAmd64AppendProtectionDevice(t *testing.T) {
 			Debug:    false,
 			File:     firmware,
 		},
-	}
+	)
 
 	assert.Equal(expectedOut, devices)
 }

@@ -67,8 +67,14 @@ service AgentService {
 	rpc CopyFile(CopyFileRequest) returns (google.protobuf.Empty);
 	rpc GetOOMEvent(GetOOMEventRequest) returns (OOMEvent);
 
-	// misc Testing Skopeo for image pulling
+	// Testing Skopeo for image pulling
 	rpc PullImage(PauseContainerRequest) returns (google.protobuf.Empty);
+
+	// Testing Skopeo for image validation
+	rpc VerifyImage(PauseContainerRequest) returns (google.protobuf.Empty);
+
+	// Testing Umoci for image unpacking
+	rpc UnpackImage(PauseContainerRequest) returns (google.protobuf.Empty);
 }
 
 message CreateContainerRequest {
@@ -139,6 +145,8 @@ message StatsContainerRequest {
 
 message PauseContainerRequest {
     string container_id = 1;
+	string api_key = 2;
+	string gpg_key = 3;
 }
 
 message ResumeContainerRequest {
@@ -510,4 +518,8 @@ message GetMetricsRequest {}
 
 message Metrics {
 	string metrics = 1;
+}
+
+message Output {
+	string output = 1;
 }
