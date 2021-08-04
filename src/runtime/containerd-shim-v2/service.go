@@ -737,7 +737,7 @@ func (s *service) PullImage(ctx context.Context, r *taskAPI.PullImageRequest) (_
 
 	c, err := s.getContainer(r.ID)
 	if err != nil {
-		return nil, "ASH no container found here"
+		return nil, errors.New("ASH no container found here")
 	}
 
 	err = s.sandbox.PullImage(spanCtx, r.ID)
