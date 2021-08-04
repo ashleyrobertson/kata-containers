@@ -735,9 +735,13 @@ func (s *service) PullImage(ctx context.Context, r *taskAPI.PullImageRequest) (_
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	shimLog.WithFields(logrus.Fields{
+		"container-id": r.id,
+	}).Debug("ASHLEY Id of container")
+
 	c, err := s.getContainer(r.ID)
 	if err != nil {
-		return nil, errors.New("ASH no container found here")
+		return nil, errors.New("ASH no container found here " + r.id)
 	}
 
 	err = s.sandbox.PullImage(spanCtx, r.ID)
