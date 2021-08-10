@@ -737,27 +737,10 @@ func (s *service) PullImage(ctx context.Context, r *taskAPI.PullImageRequest) (_
 
 	shimLog.WithFields(logrus.Fields{
 		"container-id": r.ID,
-	}).Debug("ASHLEY Id of container")
+		"image": r.Image,
+	}).Debug("Making image pull request")
 
-	c, err := s.getContainer(r.ID)
-	if err != nil {
-		return nil, errors.New("ASH no container found here " + r.ID)
-	}
-
-	err = s.sandbox.PullImage(spanCtx, r.ID)
-	if err == nil {
-		// c.status = task.StatusPaused
-		s.send(&eventstypes.TaskPaused{
-			ContainerID: c.id,
-		})
-		return empty, nil
-	}
-
-	if status, err := s.getContainerStatus(c.id); err != nil {
-		c.status = task.StatusUnknown
-	} else {
-		c.status = status
-	}
+	err = s.sandbox.PullImage(spanCtx, r.ID, r.Image)
 
 	return empty, err
 }

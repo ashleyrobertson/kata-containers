@@ -172,7 +172,7 @@ func (n *mockAgent) resumeContainer(ctx context.Context, sandbox *Sandbox, c Con
 }
 
 // resumeContainer is the Noop agent Container resume implementation. It does nothing.
-func (n *mockAgent) pullImage(ctx context.Context, sandbox *Sandbox, c Container) error {
+func (n *mockAgent) pullImage(ctx context.Context, sandbox *Sandbox, c Container, image string) error {
 	return nil
 }
 

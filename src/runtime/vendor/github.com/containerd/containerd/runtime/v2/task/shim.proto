@@ -186,4 +186,5 @@ message ResumeRequest {
 
 message PullImageRequest {
 	string id = 1;
+	string image = 2;
 }

@@ -1435,7 +1435,7 @@ func (s *Sandbox) ResumeContainer(ctx context.Context, containerID string) error
 }
 
 // PullImage pulls an image on a running container.
-func (s *Sandbox) PullImage(ctx context.Context, containerID string) error {
+func (s *Sandbox) PullImage(ctx context.Context, containerID string, image string) error {
 	// Fetch the container.
 	c, err := s.findContainer(containerID)
 	if err != nil {
@@ -1443,7 +1443,7 @@ func (s *Sandbox) PullImage(ctx context.Context, containerID string) error {
 	}
 
 	// Pull the image.
-	if err := c.pullImage(ctx); err != nil {
+	if err := c.pullImage(ctx, image); err != nil {
 		return err
 	}
 

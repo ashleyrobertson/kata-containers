@@ -1741,9 +1741,9 @@ func (k *kataAgent) resumeContainer(ctx context.Context, sandbox *Sandbox, c Con
 	return err
 }
 
-func (k *kataAgent) pullImage(ctx context.Context, sandbox *Sandbox, c Container) error {
+func (k *kataAgent) pullImage(ctx context.Context, sandbox *Sandbox, c Container, image string) error {
 	req := &grpc.PullImageRequest{
-		ContainerId: c.id,
+		ContainerId: image,
 	}
 	c.Logger().Debugf("ASHLEY making pull image call to agent")
 	_, err := k.sendReq(ctx, req)

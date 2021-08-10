@@ -1220,7 +1220,7 @@ func (c *Container) resume(ctx context.Context) error {
 	return c.setContainerState(types.StateRunning)
 }
 
-func (c *Container) pullImage(ctx context.Context) error {
+func (c *Container) pullImage(ctx context.Context, image string) error {
 	if err := c.checkSandboxRunning("pause"); err != nil {
 		return err
 	}
@@ -1229,7 +1229,7 @@ func (c *Container) pullImage(ctx context.Context) error {
 		return fmt.Errorf("Container not running, impossible to pull image")
 	}
 
-	if err := c.sandbox.agent.pullImage(ctx, c.sandbox, *c); err != nil {
+	if err := c.sandbox.agent.pullImage(ctx, c.sandbox, *c, image); err != nil {
 		return err
 	}
 

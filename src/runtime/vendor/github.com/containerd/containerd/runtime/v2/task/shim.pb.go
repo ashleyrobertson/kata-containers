@@ -327,6 +327,7 @@ func (*ResumeRequest) Descriptor() ([]byte, []int) { return fileDescriptorShim, 
 
 type PullImageRequest struct {
 	ID string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Image string `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
 }
 
 func (m *PullImageRequest) Reset()                    { *m = PullImageRequest{} }
@@ -1320,6 +1321,12 @@ func (m *PullImageRequest) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintShim(dAtA, i, uint64(len(m.ID)))
 		i += copy(dAtA[i:], m.ID)
 	}
+	if len(m.Image) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintShim(dAtA, i, uint64(len(m.Image)))
+		i += copy(dAtA[i:], m.Image)
+	}
 	return i, nil
 }
 
@@ -1754,6 +1761,10 @@ func (m *PullImageRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovShim(uint64(l))
 	}
+	l = len(m.Image)
+	if l > 0 {
+		n += 1 + l + sovShim(uint64(l))
+	}
 	return n
 }
 
@@ -2080,6 +2091,7 @@ func (this *PullImageRequest) String() string {
 	}
 	s := strings.Join([]string{`&PullImageRequest{`,
 		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`Image:` + fmt.Sprintf("%v", this.Image) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5572,6 +5584,7 @@ func (m *ResumeRequest) Unmarshal(dAtA []byte) error {
 	return nil
 }
 func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
+	info := "hello"
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5601,6 +5614,7 @@ func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			info += " case 1"
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
 			}
@@ -5628,6 +5642,40 @@ func (m *PullImageRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			info += " case 2"
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Image", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowShim
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthShim
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthShim
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			// return fmt.Errorf("In the unmarshalling %d", string(dAtA[iNdEx:postIndex]))
+			m.Image = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
