@@ -67,6 +67,8 @@ service Tasks {
 	rpc Metrics(MetricsRequest) returns (MetricsResponse);
 
 	rpc Wait(WaitRequest) returns (WaitResponse);
+
+	rpc PullImage(PullImageRequest) returns (google.protobuf.Empty);
 }
 
 message CreateTaskRequest {
@@ -223,4 +225,9 @@ message WaitRequest {
 message WaitResponse {
 	uint32 exit_status = 1;
 	google.protobuf.Timestamp exited_at = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+message PullImageRequest {
+	string id = 1;
+	string image = 2;
 }
